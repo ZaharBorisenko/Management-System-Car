@@ -119,12 +119,6 @@ func (s *CarStore) CreateCar(ctx context.Context, req *models.CarRequestDTO) (mo
 		UpdatedAt:    time.Now(),
 	}
 
-	//transaction database
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return createdCar, err
-	}
-
 	query := `
 INSERT INTO car (
     id, description, year, brand, model, fuel_type, engine_id,
@@ -136,7 +130,7 @@ INSERT INTO car (
 RETURNING id, description, year, brand, model, fuel_type, price, vin, mileage,
           transmission, color, body_type, created_at, updated_at
 `
-	err = tx.QueryRowContext(ctx, query,
+	err = s.db.QueryRowContext(ctx, query,
 		newCar.ID,
 		newCar.Description,
 		newCar.Year,
@@ -168,14 +162,6 @@ RETURNING id, description, year, brand, model, fuel_type, price, vin, mileage,
 		&createdCar.CreatedAt,
 		&createdCar.UpdatedAt,
 	)
-	if err != nil {
-		tx.Rollback()
-		return createdCar, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return createdCar, err
-	}
 
 	return createdCar, nil
 }

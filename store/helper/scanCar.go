@@ -1,6 +1,8 @@
 package helper
 
-import "github.com/ZaharBorisenko/Management-System-Car/models"
+import (
+	"github.com/ZaharBorisenko/Management-System-Car/models"
+)
 
 type scannable interface {
 	Scan(dest ...any) error
@@ -26,8 +28,9 @@ func ScanCar(row scannable) (models.Car, error) {
 		&car.UpdatedAt,
 
 		&car.Engine.ID,
+		&car.Engine.Description,
 		&car.Engine.Displacement,
-		&car.Engine.NoOfCyclinders,
+		&car.Engine.NoOfCylinders,
 		&car.Engine.CarRange,
 		&car.Engine.HorsePower,
 		&car.Engine.Torque,
@@ -37,4 +40,23 @@ func ScanCar(row scannable) (models.Car, error) {
 		&car.Engine.UpdatedAt,
 	)
 	return car, err
+}
+
+func ScanEngine(row scannable) (models.Engine, error) {
+	engine := models.Engine{}
+
+	err := row.Scan(
+		&engine.ID,
+		&engine.Description,
+		&engine.Displacement,
+		&engine.NoOfCylinders,
+		&engine.CarRange,
+		&engine.HorsePower,
+		&engine.Torque,
+		&engine.EngineType,
+		&engine.EmissionClass,
+		&engine.CreatedAt,
+		&engine.UpdatedAt,
+	)
+	return engine, err
 }
