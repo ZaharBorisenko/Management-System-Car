@@ -70,7 +70,8 @@ func (e *EngineStore) CreateEngine(ctx context.Context, req *models.EngineReques
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 	}
-	row := e.db.QueryRowContext(ctx, query,
+
+	err := e.db.QueryRowContext(ctx, query,
 		newEngine.ID,
 		newEngine.Description,
 		newEngine.Displacement,
@@ -95,6 +96,10 @@ func (e *EngineStore) CreateEngine(ctx context.Context, req *models.EngineReques
 		&createdEgine.CreatedAt,
 		&createdEgine.UpdatedAt,
 	)
+
+	if err != nil {
+		return models.Engine{}, err
+	}
 
 	return createdEgine, nil
 

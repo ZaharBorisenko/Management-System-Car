@@ -163,6 +163,10 @@ RETURNING id, description, year, brand, model, fuel_type, price, vin, mileage,
 		&createdCar.UpdatedAt,
 	)
 
+	if err != nil {
+		return models.Car{}, err
+	}
+
 	return createdCar, nil
 }
 

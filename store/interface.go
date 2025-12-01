@@ -1,1 +1,18 @@
 package store
+
+import (
+	"context"
+
+	"github.com/ZaharBorisenko/Management-System-Car/models"
+)
+
+type CarStoreInterface interface {
+	GetCarById(ctx context.Context, id string) (models.Car, error)
+	GetCarByBrand(ctx context.Context, brand string) ([]models.Car, error)
+	CreateCar(ctx context.Context, req *models.CarRequestDTO) (models.Car, error)
+}
+
+type EngineStoreInterface interface {
+	GetEngineById(ctx context.Context, id string) (models.Engine, error)
+	CreateEngine(ctx context.Context, req *models.EngineRequestDTO) (models.Engine, error)
+}
