@@ -2,25 +2,28 @@ package car
 
 import (
 	"context"
+	"log/slog"
 
-	"github.com/ZaharBorisenko/Management-System-Car/models"
-	"github.com/ZaharBorisenko/Management-System-Car/store"
+	"github.com/ZaharBorisenko/Management-System-Car/internal/models"
+	"github.com/ZaharBorisenko/Management-System-Car/internal/store"
 	"github.com/go-playground/validator/v10"
 )
 
-type CarService struct {
+type Service struct {
 	store     store.CarStoreInterface
 	validator *validator.Validate
+	logger    *slog.Logger
 }
 
-func NewCarService(store store.CarStoreInterface) *CarService {
-	return &CarService{
+func NewCarService(store store.CarStoreInterface, logger *slog.Logger) *Service {
+	return &Service{
 		store:     store,
 		validator: validator.New(),
+		logger:    logger,
 	}
 }
 
-func (c *CarService) GetCarById(ctx context.Context, id string) (*models.Car, error) {
+func (c *Service) GetCarById(ctx context.Context, id string) (*models.Car, error) {
 	car, err := c.store.GetCarById(ctx, id)
 	if err != nil {
 		return nil, err
@@ -28,7 +31,7 @@ func (c *CarService) GetCarById(ctx context.Context, id string) (*models.Car, er
 	return &car, nil
 }
 
-func (c *CarService) GetCarByBrand(ctx context.Context, brand string) (*[]models.Car, error) {
+func (c *Service) GetCarByBrand(ctx context.Context, brand string) (*[]models.Car, error) {
 	cars, err := c.store.GetCarByBrand(ctx, brand)
 	if err != nil {
 		return nil, err
@@ -36,7 +39,7 @@ func (c *CarService) GetCarByBrand(ctx context.Context, brand string) (*[]models
 	return &cars, nil
 }
 
-func (c *CarService) CreateCar(ctx context.Context, req *models.CarRequestDTO) (*models.Car, error) {
+func (c *Service) CreateCar(ctx context.Context, req *models.CarRequestDTO) (*models.Car, error) {
 	if err := c.validator.Struct(req); err != nil {
 		return nil, err
 	}

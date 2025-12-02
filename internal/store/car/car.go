@@ -5,19 +5,21 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
-	"github.com/ZaharBorisenko/Management-System-Car/models"
-	"github.com/ZaharBorisenko/Management-System-Car/store/helper"
+	"github.com/ZaharBorisenko/Management-System-Car/internal/models"
+	"github.com/ZaharBorisenko/Management-System-Car/internal/store/helper"
 	"github.com/google/uuid"
 )
 
-type CarStore struct {
-	db *sql.DB
+type Store struct {
+	db     *sql.DB
+	logger *slog.Logger
 }
 
-func NewCarStore(db *sql.DB) *CarStore {
-	return &CarStore{db: db}
+func NewCarStore(db *sql.DB, logger *slog.Logger) *Store {
+	return &Store{db: db, logger: logger}
 }
 
 const CAR_SELECT = `
@@ -33,17 +35,17 @@ LEFT JOIN engine AS e ON c.engine_id = e.id
 `
 
 // === GET ===
-func (s *CarStore) GetAllCar(ctx context.Context) ([]models.Car, error) {
+func (s *Store) GetAllCar(ctx context.Context) ([]models.Car, error) {
 	return []models.Car{}, nil
 }
-func (s *CarStore) GetCarById(ctx context.Context, id string) (models.Car, error) {
+func (s *Store) GetCarById(ctx context.Context, id string) (models.Car, error) {
 	query := CAR_SELECT + "WHERE c.id = $1"
 
 	row := s.db.QueryRowContext(ctx, query, id)
 	car, err := helper.ScanCar(row)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return car, fmt.Errorf("car not found")
 		}
 		return car, err
@@ -52,7 +54,7 @@ func (s *CarStore) GetCarById(ctx context.Context, id string) (models.Car, error
 	return car, nil
 }
 
-func (s *CarStore) GetCarByBrand(ctx context.Context, brand string) ([]models.Car, error) {
+func (s *Store) GetCarByBrand(ctx context.Context, brand string) ([]models.Car, error) {
 	query := CAR_SELECT + "WHERE c.brand = $1"
 
 	rows, err := s.db.QueryContext(ctx, query, brand)
@@ -75,21 +77,21 @@ func (s *CarStore) GetCarByBrand(ctx context.Context, brand string) ([]models.Ca
 	}
 	return cars, nil
 }
-func (s *CarStore) GetCarByBodyType(ctx context.Context, bodyType string) ([]models.Car, error) {
+func (s *Store) GetCarByBodyType(ctx context.Context, bodyType string) ([]models.Car, error) {
 	return []models.Car{}, nil
 }
-func (s *CarStore) GetCarByColor(ctx context.Context, color string) ([]models.Car, error) {
+func (s *Store) GetCarByColor(ctx context.Context, color string) ([]models.Car, error) {
 	return []models.Car{}, nil
 }
-func (s *CarStore) GetCarByFuelType(ctx context.Context, fuelType string) ([]models.Car, error) {
+func (s *Store) GetCarByFuelType(ctx context.Context, fuelType string) ([]models.Car, error) {
 	return []models.Car{}, nil
 }
-func (s *CarStore) GetCarByVinCode(ctx context.Context, vinCode string) (models.Car, error) {
+func (s *Store) GetCarByVinCode(ctx context.Context, vinCode string) (models.Car, error) {
 	return models.Car{}, nil
 }
 
 // === CREATE ===
-func (s *CarStore) CreateCar(ctx context.Context, req *models.CarRequestDTO) (models.Car, error) {
+func (s *Store) CreateCar(ctx context.Context, req *models.CarRequestDTO) (models.Car, error) {
 	createdCar := models.Car{}
 	engineID := uuid.UUID{}
 
@@ -171,11 +173,11 @@ RETURNING id, description, year, brand, model, fuel_type, price, vin, mileage,
 }
 
 // === UPDATE ===
-func (s *CarStore) UpdateCar(ctx context.Context, req *models.CarRequestDTO, id string) (models.Car, error) {
+func (s *Store) UpdateCar(ctx context.Context, req *models.CarRequestDTO, id string) (models.Car, error) {
 	return models.Car{}, nil
 }
 
 // === DELETE ===
-func (s *CarStore) DeleteCar(ctx context.Context, id string) (models.Car, error) {
+func (s *Store) DeleteCar(ctx context.Context, id string) (models.Car, error) {
 	return models.Car{}, nil
 }

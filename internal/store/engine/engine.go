@@ -3,20 +3,23 @@ package engine
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
-	"github.com/ZaharBorisenko/Management-System-Car/models"
-	"github.com/ZaharBorisenko/Management-System-Car/store/helper"
+	"github.com/ZaharBorisenko/Management-System-Car/internal/models"
+	"github.com/ZaharBorisenko/Management-System-Car/internal/store/helper"
 	"github.com/google/uuid"
 )
 
-type EngineStore struct {
-	db *sql.DB
+type Store struct {
+	db     *sql.DB
+	logger *slog.Logger
 }
 
-func NewEngineStore(db *sql.DB) *EngineStore {
-	return &EngineStore{db: db}
+func NewEngineStore(db *sql.DB, logger *slog.Logger) *Store {
+	return &Store{db: db, logger: logger}
 }
 
 const ENGINE_SELECT = `
@@ -25,18 +28,18 @@ SELECT
 	torque, engine_type, emission_class, created_at, updated_at FROM engine`
 
 // === GET ===
-func (e *EngineStore) GetAllEngine(ctx context.Context) ([]models.Engine, error) {
+func (e *Store) GetAllEngine(ctx context.Context) ([]models.Engine, error) {
 	return []models.Engine{}, nil
 }
 
-func (e *EngineStore) GetEngineById(ctx context.Context, id string) (models.Engine, error) {
+func (e *Store) GetEngineById(ctx context.Context, id string) (models.Engine, error) {
 	query := ENGINE_SELECT + "WHERE id = $1"
 
 	row := e.db.QueryRowContext(ctx, query, id)
 	engine, err := helper.ScanEngine(row)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return engine, fmt.Errorf("engine not found")
 		}
 		return engine, err
@@ -44,13 +47,13 @@ func (e *EngineStore) GetEngineById(ctx context.Context, id string) (models.Engi
 
 	return engine, nil
 }
-func (e *EngineStore) GetEngineByEngineType(ctx context.Context, engineType string) (models.Engine, error) {
+func (e *Store) GetEngineByEngineType(ctx context.Context, engineType string) (models.Engine, error) {
 	return models.Engine{}, nil
 }
 
 // === CREATE ===
-func (e *EngineStore) CreateEngine(ctx context.Context, req *models.EngineRequestDTO) (models.Engine, error) {
-	createdEgine := models.Engine{}
+func (e *Store) CreateEngine(ctx context.Context, req *models.EngineRequestDTO) (models.Engine, error) {
+	createdEngine := models.Engine{}
 
 	query := `INSERT INTO engine
 	(id, description, displacemen, no_of_cyclinders, carRange, horse_power,
@@ -84,33 +87,33 @@ func (e *EngineStore) CreateEngine(ctx context.Context, req *models.EngineReques
 		newEngine.CreatedAt,
 		newEngine.UpdatedAt,
 	).Scan(
-		&createdEgine.ID,
-		&createdEgine.Description,
-		&createdEgine.Displacement,
-		&createdEgine.NoOfCylinders,
-		&createdEgine.CarRange,
-		&createdEgine.HorsePower,
-		&createdEgine.Torque,
-		&createdEgine.EngineType,
-		&createdEgine.EmissionClass,
-		&createdEgine.CreatedAt,
-		&createdEgine.UpdatedAt,
+		&createdEngine.ID,
+		&createdEngine.Description,
+		&createdEngine.Displacement,
+		&createdEngine.NoOfCylinders,
+		&createdEngine.CarRange,
+		&createdEngine.HorsePower,
+		&createdEngine.Torque,
+		&createdEngine.EngineType,
+		&createdEngine.EmissionClass,
+		&createdEngine.CreatedAt,
+		&createdEngine.UpdatedAt,
 	)
 
 	if err != nil {
 		return models.Engine{}, err
 	}
 
-	return createdEgine, nil
+	return createdEngine, nil
 
 }
 
 // === UPDATE ===
-func (e *EngineStore) UpdateEngine(ctx context.Context, req *models.EngineRequestDTO, id string) (models.Engine, error) {
+func (e *Store) UpdateEngine(ctx context.Context, req *models.EngineRequestDTO, id string) (models.Engine, error) {
 	return models.Engine{}, nil
 }
 
 // === DELETE ===
-func (e *EngineStore) DeleteEngine(ctx context.Context, id string) (models.Engine, error) {
+func (e *Store) DeleteEngine(ctx context.Context, id string) (models.Engine, error) {
 	return models.Engine{}, nil
 }

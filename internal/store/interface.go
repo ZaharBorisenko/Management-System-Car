@@ -3,7 +3,7 @@ package store
 import (
 	"context"
 
-	"github.com/ZaharBorisenko/Management-System-Car/models"
+	"github.com/ZaharBorisenko/Management-System-Car/internal/models"
 )
 
 type CarStoreInterface interface {

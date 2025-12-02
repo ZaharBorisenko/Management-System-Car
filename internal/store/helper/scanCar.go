@@ -1,8 +1,6 @@
 package helper
 
-import (
-	"github.com/ZaharBorisenko/Management-System-Car/models"
-)
+import "github.com/ZaharBorisenko/Management-System-Car/internal/models"
 
 type scannable interface {
 	Scan(dest ...any) error
