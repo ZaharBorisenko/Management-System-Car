@@ -1,0 +1,46 @@
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres_car
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: CarManager
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  migrate:
+    image: migrate/migrate:latest
+    container_name: car_migrations
+    depends_on:
+      - postgres
+    volumes:
+      - ./migration:/migration
+    command: [
+      "-path", "/migration",
+      "-database", "postgres://postgres:admin@postgres:5432/CarManager?sslmode=disable",
+      "up"
+    ]
+    restart: "on-failure"
+
+  app:
+    build: .
+    container_name: car_app
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: admin
+      DB_NAME: CarManager
+
+volumes:
+  postgres_data:
