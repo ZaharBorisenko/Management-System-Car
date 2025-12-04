@@ -19,7 +19,7 @@ import (
 
 func main() {
 	//init DB
-	err := godotenv.Load(".env")
+	err := godotenv.Load()
 	if err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
@@ -30,7 +30,10 @@ func main() {
 		Password: os.Getenv("DB_PASSWORD"),
 		Name:     os.Getenv("DB_NAME"),
 	}
-	db.InitDB(&cfg)
+	err = db.InitDB(&cfg)
+	if err != nil {
+		log.Fatalf("Failed to init DB: %v", err)
+	}
 	defer db.CloseDB()
 	db := db.GetDB()
 
@@ -54,7 +57,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /cars/{id}", carHandler.GetCarById)
-	mux.HandleFunc("GET /cars/{brand}", carHandler.GetCarByBrand)
+	mux.HandleFunc("GET /cars/brand/{brand}", carHandler.GetCarByBrand)
 	mux.HandleFunc("POST /cars", carHandler.CreateCar)
 
 	mux.HandleFunc("GET /engine/{id}", engineHandler.GetEngineById)

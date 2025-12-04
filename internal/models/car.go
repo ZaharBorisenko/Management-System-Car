@@ -30,7 +30,7 @@ type CarRequestDTO struct {
 	Brand        string  `json:"brand" validate:"required,min=2,max=50"`
 	Model        string  `json:"model" validate:"required,min=1,max=100"`
 	FuelType     string  `json:"fuel_type" validate:"required,oneof=petrol diesel hybrid electric gas"`
-	Engine       Engine  `json:"engine" validate:"required,dive"`
+	Engine       Engine  `json:"engine" validate:"required"`
 	Price        float64 `json:"price" validate:"required,gt=0"`
 	VIN          string  `json:"vin" validate:"required,len=17,alphanum"`
 	Mileage      int64   `json:"mileage" validate:"required,gte=0,lte=3000000"`

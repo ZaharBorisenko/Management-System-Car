@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"log/slog"
 	"time"
 
@@ -27,7 +28,7 @@ SELECT
     c.id, c.description, c.year, c.brand, c.model, c.fuel_type,
     c.price, c.vin, c.mileage, c.transmission, c.color, c.body_type,
     c.created_at, c.updated_at,
-    e.id, e.displacement, e.no_of_cyclinders, e.carRange,
+    e.id, e.description, e.displacement, e.no_of_cylinders, e.car_range,
     e.horse_power, e.torque, e.engine_type, e.emission_class,
     e.created_at, e.updated_at
 FROM car AS c
@@ -38,8 +39,12 @@ LEFT JOIN engine AS e ON c.engine_id = e.id
 func (s *Store) GetAllCar(ctx context.Context) ([]models.Car, error) {
 	return []models.Car{}, nil
 }
+
 func (s *Store) GetCarById(ctx context.Context, id string) (models.Car, error) {
-	query := CAR_SELECT + "WHERE c.id = $1"
+	query := CAR_SELECT + " WHERE c.id = $1"
+
+	// Добавьте логирование запроса
+	log.Printf("Executing query with id: %s", id)
 
 	row := s.db.QueryRowContext(ctx, query, id)
 	car, err := helper.ScanCar(row)
@@ -55,7 +60,7 @@ func (s *Store) GetCarById(ctx context.Context, id string) (models.Car, error) {
 }
 
 func (s *Store) GetCarByBrand(ctx context.Context, brand string) ([]models.Car, error) {
-	query := CAR_SELECT + "WHERE c.brand = $1"
+	query := CAR_SELECT + " WHERE c.brand = $1"
 
 	rows, err := s.db.QueryContext(ctx, query, brand)
 	if err != nil {
@@ -77,15 +82,19 @@ func (s *Store) GetCarByBrand(ctx context.Context, brand string) ([]models.Car, 
 	}
 	return cars, nil
 }
+
 func (s *Store) GetCarByBodyType(ctx context.Context, bodyType string) ([]models.Car, error) {
 	return []models.Car{}, nil
 }
+
 func (s *Store) GetCarByColor(ctx context.Context, color string) ([]models.Car, error) {
 	return []models.Car{}, nil
 }
+
 func (s *Store) GetCarByFuelType(ctx context.Context, fuelType string) ([]models.Car, error) {
 	return []models.Car{}, nil
 }
+
 func (s *Store) GetCarByVinCode(ctx context.Context, vinCode string) (models.Car, error) {
 	return models.Car{}, nil
 }
@@ -95,12 +104,13 @@ func (s *Store) CreateCar(ctx context.Context, req *models.CarRequestDTO) (model
 	createdCar := models.Car{}
 	engineID := uuid.UUID{}
 
-	err := s.db.QueryRowContext(ctx, "SELECT id from engine WHERE id = $1", req.Engine.ID).Scan(&engineID)
+	// Проверка существования двигателя
+	err := s.db.QueryRowContext(ctx, "SELECT id FROM engine WHERE id = $1", req.Engine.ID).Scan(&engineID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return createdCar, errors.New("id engine does not exists in the engine table")
+			return createdCar, errors.New("engine ID does not exist in the engine table")
 		}
-		return createdCar, nil
+		return createdCar, err
 	}
 
 	newCar := models.Car{
@@ -132,6 +142,7 @@ INSERT INTO car (
 RETURNING id, description, year, brand, model, fuel_type, price, vin, mileage,
           transmission, color, body_type, created_at, updated_at
 `
+
 	err = s.db.QueryRowContext(ctx, query,
 		newCar.ID,
 		newCar.Description,

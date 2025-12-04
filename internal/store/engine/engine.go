@@ -24,8 +24,10 @@ func NewEngineStore(db *sql.DB, logger *slog.Logger) *Store {
 
 const ENGINE_SELECT = `
 SELECT
-	id, description, displacemen, no_of_cyclinders, carRange, horse_power,
-	torque, engine_type, emission_class, created_at, updated_at FROM engine`
+	id, description, displacement, no_of_cylinders, car_range, horse_power,
+	torque, engine_type, emission_class, created_at, updated_at
+FROM engine
+`
 
 // === GET ===
 func (e *Store) GetAllEngine(ctx context.Context) ([]models.Engine, error) {
@@ -33,7 +35,7 @@ func (e *Store) GetAllEngine(ctx context.Context) ([]models.Engine, error) {
 }
 
 func (e *Store) GetEngineById(ctx context.Context, id string) (models.Engine, error) {
-	query := ENGINE_SELECT + "WHERE id = $1"
+	query := ENGINE_SELECT + " WHERE id = $1"
 
 	row := e.db.QueryRowContext(ctx, query, id)
 	engine, err := helper.ScanEngine(row)
@@ -47,6 +49,7 @@ func (e *Store) GetEngineById(ctx context.Context, id string) (models.Engine, er
 
 	return engine, nil
 }
+
 func (e *Store) GetEngineByEngineType(ctx context.Context, engineType string) (models.Engine, error) {
 	return models.Engine{}, nil
 }
@@ -55,10 +58,16 @@ func (e *Store) GetEngineByEngineType(ctx context.Context, engineType string) (m
 func (e *Store) CreateEngine(ctx context.Context, req *models.EngineRequestDTO) (models.Engine, error) {
 	createdEngine := models.Engine{}
 
-	query := `INSERT INTO engine
-	(id, description, displacemen, no_of_cyclinders, carRange, horse_power,
-	torque, engine_type, emission_class, created_at, updated_at FROM engine)
-	VALUES ( $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
+	query := `
+INSERT INTO engine (
+	id, description, displacement, no_of_cylinders, car_range, horse_power,
+	torque, engine_type, emission_class, created_at, updated_at
+) VALUES (
+	$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11
+)
+RETURNING id, description, displacement, no_of_cylinders, car_range, horse_power,
+          torque, engine_type, emission_class, created_at, updated_at
+`
 
 	newEngine := models.Engine{
 		ID:            uuid.New(),
@@ -105,7 +114,6 @@ func (e *Store) CreateEngine(ctx context.Context, req *models.EngineRequestDTO) 
 	}
 
 	return createdEngine, nil
-
 }
 
 // === UPDATE ===

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/ZaharBorisenko/Management-System-Car/internal/models"
+	_ "github.com/lib/pq"
 	"log"
 )
 
@@ -19,7 +20,7 @@ func CloseDB() {
 	}
 }
 
-func InitDB(c *models.Config) {
+func InitDB(c *models.Config) error {
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		c.Host,
 		c.Port,
@@ -28,16 +29,17 @@ func InitDB(c *models.Config) {
 		c.Name,
 	)
 
-	db, err := sql.Open("postgres", psqlInfo)
+	var err error
+	db, err = sql.Open("postgres", psqlInfo)
 	if err != nil {
-		log.Fatalf("Error opening to database : %v", err)
+		return err
 	}
-	defer db.Close()
 
 	err = db.Ping()
 	if err != nil {
-		log.Fatalf("Error connection to database : %v", err)
+		return err
 	}
 
 	fmt.Println("Successfully connected!")
+	return nil
 }

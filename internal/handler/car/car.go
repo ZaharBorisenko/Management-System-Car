@@ -33,6 +33,7 @@ func (h *CarHandler) GetCarById(w http.ResponseWriter, r *http.Request) {
 
 	if err := helpers.CheckID(id); err != nil {
 		libJSON.WriteError(w, http.StatusBadRequest, err.Error())
+		return
 	}
 
 	car, err := h.service.GetCarById(ctx, id)
@@ -45,7 +46,7 @@ func (h *CarHandler) GetCarById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	libJSON.WriteJSON(w, http.StatusOK, &car)
+	libJSON.WriteJSON(w, http.StatusOK, car)
 }
 
 func (h *CarHandler) GetCarByBrand(w http.ResponseWriter, r *http.Request) {
@@ -77,6 +78,7 @@ func (h *CarHandler) CreateCar(w http.ResponseWriter, r *http.Request) {
 	createdCar, err := h.service.CreateCar(ctx, &carReq)
 	if err != nil {
 		libJSON.WriteError(w, http.StatusBadRequest, err.Error())
+		return
 	}
 
 	libJSON.WriteJSON(w, http.StatusCreated, createdCar)
