@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"log/slog"
 	"time"
 
@@ -35,16 +34,12 @@ FROM car AS c
 LEFT JOIN engine AS e ON c.engine_id = e.id
 `
 
-// === GET ===
 func (s *Store) GetAllCar(ctx context.Context) ([]models.Car, error) {
 	return []models.Car{}, nil
 }
 
 func (s *Store) GetCarById(ctx context.Context, id string) (models.Car, error) {
 	query := CAR_SELECT + " WHERE c.id = $1"
-
-	// Добавьте логирование запроса
-	log.Printf("Executing query with id: %s", id)
 
 	row := s.db.QueryRowContext(ctx, query, id)
 	car, err := helper.ScanCar(row)

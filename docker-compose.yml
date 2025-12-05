@@ -4,43 +4,64 @@ services:
     image: postgres:15
     container_name: postgres_car
     restart: always
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: CarManager
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   migrate:
     image: migrate/migrate:latest
     container_name: car_migrations
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
     volumes:
       - ./migration:/migration
     command: [
       "-path", "/migration",
-      "-database", "postgres://postgres:admin@postgres:5432/CarManager?sslmode=disable",
+      "-database", "postgres://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?sslmode=disable",
       "up"
     ]
     restart: "on-failure"
 
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.dev #dev file
     container_name: car_app
     depends_on:
       migrate:
         condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
     ports:
       - "8080:8080"
+    env_file:
+      - .env
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: admin
-      DB_NAME: CarManager
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+    volumes:
+      - ./:/app
+      - /app/tmp
+    stdin_open: true
+    tty: true
 
 volumes:
   postgres_data:
