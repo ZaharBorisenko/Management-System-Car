@@ -6,6 +6,7 @@ import (
 	carHandler "github.com/ZaharBorisenko/Management-System-Car/internal/handler/car"
 	engineHandler "github.com/ZaharBorisenko/Management-System-Car/internal/handler/engine"
 	"github.com/ZaharBorisenko/Management-System-Car/internal/models"
+	"github.com/ZaharBorisenko/Management-System-Car/internal/routes"
 	carService "github.com/ZaharBorisenko/Management-System-Car/internal/service/car"
 	engineService "github.com/ZaharBorisenko/Management-System-Car/internal/service/engine"
 	carStore "github.com/ZaharBorisenko/Management-System-Car/internal/store/car"
@@ -54,14 +55,7 @@ func main() {
 	engineHandler := engineHandler.NewEngineHandler(engineService, logger)
 
 	//router
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("GET /cars/{id}", carHandler.GetCarById)
-	mux.HandleFunc("GET /cars/brand/{brand}", carHandler.GetCarByBrand)
-	mux.HandleFunc("POST /cars", carHandler.CreateCar)
-
-	mux.HandleFunc("GET /engine/{id}", engineHandler.GetEngineById)
-	mux.HandleFunc("POST /engine", engineHandler.CreateEngine)
+	routing := routes.RegisterRoutes(carHandler, engineHandler)
 
 	// run server
 	port := os.Getenv("SERVER_PORT")
@@ -69,7 +63,7 @@ func main() {
 		port = ":8080"
 	}
 
-	err = http.ListenAndServe(port, mux)
+	err = http.ListenAndServe(port, routing)
 	if err != nil {
 		log.Fatalf("Server not listening %v", err)
 	}

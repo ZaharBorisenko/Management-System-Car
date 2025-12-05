@@ -23,6 +23,14 @@ func NewCarService(store store.CarStoreInterface, logger *slog.Logger) *Service 
 	}
 }
 
+func (c *Service) GetAllCar(ctx context.Context) (*[]models.Car, error) {
+	cars, err := c.store.GetAllCar(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &cars, nil
+}
+
 func (c *Service) GetCarById(ctx context.Context, id string) (*models.Car, error) {
 	car, err := c.store.GetCarById(ctx, id)
 	if err != nil {

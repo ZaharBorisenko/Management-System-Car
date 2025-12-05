@@ -35,7 +35,28 @@ LEFT JOIN engine AS e ON c.engine_id = e.id
 `
 
 func (s *Store) GetAllCar(ctx context.Context) ([]models.Car, error) {
-	return []models.Car{}, nil
+	query := CAR_SELECT
+
+	rows, err := s.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	cars := []models.Car{}
+	for rows.Next() {
+		car, err := helper.ScanCar(rows)
+		if err != nil {
+			return nil, err
+		}
+		cars = append(cars, car)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return cars, nil
 }
 
 func (s *Store) GetCarById(ctx context.Context, id string) (models.Car, error) {

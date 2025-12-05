@@ -27,6 +27,22 @@ func NewCarHandler(service service.CarServiceInterface, logger *slog.Logger) *Ca
 	}
 }
 
+func (h *CarHandler) GetAllCar(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	cars, err := h.service.GetAllCar(ctx)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			libJSON.WriteError(w, http.StatusNotFound, "Cars not found")
+		} else {
+			libJSON.WriteError(w, http.StatusInternalServerError, "Internal server error")
+		}
+		return
+	}
+
+	libJSON.WriteJSON(w, http.StatusOK, cars)
+}
+
 func (h *CarHandler) GetCarById(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := r.PathValue("id")
