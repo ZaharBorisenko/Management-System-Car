@@ -47,7 +47,6 @@ func ScanCar(row scannable) (models.Car, error) {
 
 	if err != nil {
 		log.Printf("ScanCar error: %v, type: %T", err, err)
-		// Дополнительная диагностика
 		if strings.Contains(err.Error(), "converting") {
 			log.Printf("Possible type conversion error")
 		}

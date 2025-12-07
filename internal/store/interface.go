@@ -8,7 +8,8 @@ import (
 
 type CarStoreInterface interface {
 	GetAllCar(ctx context.Context) ([]models.Car, error)
-	GetCarById(ctx context.Context, id string) (models.Car, error)
+	GetCarById(ctx context.Context, id string) (*models.Car, error)
+	GetCarByVinCode(ctx context.Context, vinCode string) (*models.Car, error)
 	GetCarByBrand(ctx context.Context, brand string) ([]models.Car, error)
 	CreateCar(ctx context.Context, req *models.CarRequestDTO) (models.Car, error)
 }

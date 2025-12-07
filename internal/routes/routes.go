@@ -11,6 +11,7 @@ func RegisterRoutes(car *carHandler.CarHandler, engine *engineHandler.EngineHand
 
 	mux.HandleFunc("GET /cars", car.GetAllCar)
 	mux.HandleFunc("GET /cars/{id}", car.GetCarById)
+	mux.HandleFunc("GET /cars/vin/{vin}", car.GetCarByVinCode)
 	mux.HandleFunc("GET /cars/brand/{brand}", car.GetCarByBrand)
 	mux.HandleFunc("POST /cars", car.CreateCar)
 

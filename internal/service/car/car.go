@@ -36,7 +36,15 @@ func (c *Service) GetCarById(ctx context.Context, id string) (*models.Car, error
 	if err != nil {
 		return nil, err
 	}
-	return &car, nil
+	return car, nil
+}
+
+func (c *Service) GetCarByVinCode(ctx context.Context, vinCode string) (*models.Car, error) {
+	car, err := c.store.GetCarByVinCode(ctx, vinCode)
+	if err != nil {
+		return nil, err
+	}
+	return car, nil
 }
 
 func (c *Service) GetCarByBrand(ctx context.Context, brand string) (*[]models.Car, error) {

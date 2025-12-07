@@ -1,10 +1,10 @@
 package handler
 
 import (
-	"database/sql"
-	"errors"
 	helpers "github.com/ZaharBorisenko/Management-System-Car/internal/handler/helpers/ID"
 	"github.com/ZaharBorisenko/Management-System-Car/internal/models"
+	"github.com/ZaharBorisenko/Management-System-Car/internal/myErr"
+	"github.com/go-playground/validator/v10"
 	"log/slog"
 	"net/http"
 
@@ -32,11 +32,7 @@ func (h *CarHandler) GetAllCar(w http.ResponseWriter, r *http.Request) {
 
 	cars, err := h.service.GetAllCar(ctx)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			libJSON.WriteError(w, http.StatusNotFound, "Cars not found")
-		} else {
-			libJSON.WriteError(w, http.StatusInternalServerError, "Internal server error")
-		}
+		myErr.HandleError(w, err)
 		return
 	}
 
@@ -54,11 +50,20 @@ func (h *CarHandler) GetCarById(w http.ResponseWriter, r *http.Request) {
 
 	car, err := h.service.GetCarById(ctx, id)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			libJSON.WriteError(w, http.StatusNotFound, "Car not found")
-		} else {
-			libJSON.WriteError(w, http.StatusInternalServerError, "Internal server error")
-		}
+		myErr.HandleError(w, err)
+		return
+	}
+
+	libJSON.WriteJSON(w, http.StatusOK, car)
+}
+
+func (h *CarHandler) GetCarByVinCode(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	vinCode := r.PathValue("vin")
+
+	car, err := h.service.GetCarByVinCode(ctx, vinCode)
+	if err != nil {
+		myErr.HandleError(w, err)
 		return
 	}
 
@@ -71,11 +76,7 @@ func (h *CarHandler) GetCarByBrand(w http.ResponseWriter, r *http.Request) {
 
 	cars, err := h.service.GetCarByBrand(ctx, brand)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			libJSON.WriteError(w, http.StatusNotFound, "Brand not found")
-		} else {
-			libJSON.WriteError(w, http.StatusInternalServerError, "Internal server error")
-		}
+		myErr.HandleError(w, err)
 		return
 	}
 
@@ -93,7 +94,11 @@ func (h *CarHandler) CreateCar(w http.ResponseWriter, r *http.Request) {
 
 	createdCar, err := h.service.CreateCar(ctx, &carReq)
 	if err != nil {
-		libJSON.WriteError(w, http.StatusBadRequest, err.Error())
+		if _, ok := err.(validator.ValidationErrors); ok {
+			libJSON.WriteError(w, http.StatusBadRequest, err.Error())
+		}
+
+		myErr.HandleError(w, err)
 		return
 	}
 

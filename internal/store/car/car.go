@@ -5,7 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/ZaharBorisenko/Management-System-Car/internal/myErr"
+	"github.com/lib/pq"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/ZaharBorisenko/Management-System-Car/internal/models"
@@ -34,45 +37,57 @@ FROM car AS c
 LEFT JOIN engine AS e ON c.engine_id = e.id
 `
 
+func pgErrorCode(err error) pq.ErrorCode {
+	var pgErr *pq.Error
+	if errors.As(err, &pgErr) {
+		return pgErr.Code
+	}
+	return ""
+}
+
 func (s *Store) GetAllCar(ctx context.Context) ([]models.Car, error) {
 	query := CAR_SELECT
 
 	rows, err := s.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("query: %w", err)
 	}
 	defer rows.Close()
 
-	cars := []models.Car{}
+	cars := make([]models.Car, 0)
+
 	for rows.Next() {
 		car, err := helper.ScanCar(rows)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("scan car:  %w", err)
 		}
 		cars = append(cars, car)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("rows error: %w", err)
+	}
+
+	if len(cars) == 0 {
+		return nil, myErr.ErrNotFound
 	}
 
 	return cars, nil
 }
 
-func (s *Store) GetCarById(ctx context.Context, id string) (models.Car, error) {
+func (s *Store) GetCarById(ctx context.Context, id string) (*models.Car, error) {
 	query := CAR_SELECT + " WHERE c.id = $1"
-
 	row := s.db.QueryRowContext(ctx, query, id)
-	car, err := helper.ScanCar(row)
 
+	car, err := helper.ScanCar(row)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return car, fmt.Errorf("car not found")
+			return nil, myErr.ErrNotFound
 		}
-		return car, err
+		return nil, fmt.Errorf("get car by id query: %w", err)
 	}
 
-	return car, nil
+	return &car, nil
 }
 
 func (s *Store) GetCarByBrand(ctx context.Context, brand string) ([]models.Car, error) {
@@ -80,53 +95,63 @@ func (s *Store) GetCarByBrand(ctx context.Context, brand string) ([]models.Car, 
 
 	rows, err := s.db.QueryContext(ctx, query, brand)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get cars by brand query: %w", err)
 	}
 	defer rows.Close()
 
-	cars := []models.Car{}
+	cars := make([]models.Car, 0)
+
 	for rows.Next() {
 		car, err := helper.ScanCar(rows)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("scan car:  %w", err)
 		}
 		cars = append(cars, car)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("rows error:  %w", err)
 	}
+
+	if len(cars) == 0 {
+		return nil, myErr.ErrNotFound
+	}
+
 	return cars, nil
 }
 
-func (s *Store) GetCarByBodyType(ctx context.Context, bodyType string) ([]models.Car, error) {
-	return []models.Car{}, nil
-}
+func (s *Store) GetCarByVinCode(ctx context.Context, vinCode string) (*models.Car, error) {
+	query := CAR_SELECT + "WHERE c.vin = $1"
 
-func (s *Store) GetCarByColor(ctx context.Context, color string) ([]models.Car, error) {
-	return []models.Car{}, nil
-}
-
-func (s *Store) GetCarByFuelType(ctx context.Context, fuelType string) ([]models.Car, error) {
-	return []models.Car{}, nil
-}
-
-func (s *Store) GetCarByVinCode(ctx context.Context, vinCode string) (models.Car, error) {
-	return models.Car{}, nil
-}
-
-// === CREATE ===
-func (s *Store) CreateCar(ctx context.Context, req *models.CarRequestDTO) (models.Car, error) {
-	createdCar := models.Car{}
-	engineID := uuid.UUID{}
-
-	// Проверка существования двигателя
-	err := s.db.QueryRowContext(ctx, "SELECT id FROM engine WHERE id = $1", req.Engine.ID).Scan(&engineID)
+	row := s.db.QueryRowContext(ctx, query, vinCode)
+	car, err := helper.ScanCar(row)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return createdCar, errors.New("engine ID does not exist in the engine table")
+			return nil, myErr.ErrNotFound
 		}
-		return createdCar, err
+		return nil, fmt.Errorf("get car by vinCode query: %w", err)
+	}
+
+	return &car, nil
+}
+
+func (s *Store) CreateCar(ctx context.Context, req *models.CarRequestDTO) (models.Car, error) {
+	//begin transaction
+	tx, err := s.db.BeginTx(ctx, nil) // nil = default option (READ COMMITTED)
+	if err != nil {
+		return models.Car{}, fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	//check engine
+	var engineExists bool
+	err = tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM engine WHERE id = $1)", req.Engine.ID).Scan(&engineExists)
+
+	if err != nil {
+		return models.Car{}, fmt.Errorf("check engine existence: %w", err)
+	}
+	if !engineExists {
+		return models.Car{}, myErr.ErrEngineNotFound
 	}
 
 	newCar := models.Car{
@@ -155,11 +180,12 @@ INSERT INTO car (
     $1, $2, $3, $4, $5, $6, $7,
     $8, $9, $10, $11, $12, $13, $14, $15
 )
-RETURNING id, description, year, brand, model, fuel_type, price, vin, mileage,
-          transmission, color, body_type, created_at, updated_at
-`
+RETURNING id, description, year, brand, model, fuel_type, engine_id, price, vin, mileage,
+          transmission, color, body_type, created_at, updated_at`
 
-	err = s.db.QueryRowContext(ctx, query,
+	createdCar := models.Car{}
+
+	err = tx.QueryRowContext(ctx, query,
 		newCar.ID,
 		newCar.Description,
 		newCar.Year,
@@ -182,6 +208,7 @@ RETURNING id, description, year, brand, model, fuel_type, price, vin, mileage,
 		&createdCar.Brand,
 		&createdCar.Model,
 		&createdCar.FuelType,
+		&createdCar.Engine.ID,
 		&createdCar.Price,
 		&createdCar.VIN,
 		&createdCar.Mileage,
@@ -193,18 +220,36 @@ RETURNING id, description, year, brand, model, fuel_type, price, vin, mileage,
 	)
 
 	if err != nil {
-		return models.Car{}, err
+		switch pgErrorCode(err) {
+		case "23505": // Duplicate unique field
+			if strings.Contains(err.Error(), "car_vin_key") ||
+				strings.Contains(strings.ToLower(err.Error()), "vin") {
+				return models.Car{}, myErr.ErrDuplicateVIN
+			}
+			return models.Car{}, myErr.ErrConflict
+
+		case "23514": // err CHECK (year < 1886, mileage < 0)
+			return models.Car{}, myErr.ErrInvalidInput
+
+		case "23503": // foreign key
+			return models.Car{}, myErr.ErrEngineNotFound
+
+		default:
+			return models.Car{}, fmt.Errorf("insert car: %w", err)
+		}
 	}
 
+	if err = tx.Commit(); err != nil {
+		return models.Car{}, fmt.Errorf("commit transaction: %w", err)
+	}
+	
 	return createdCar, nil
 }
 
-// === UPDATE ===
 func (s *Store) UpdateCar(ctx context.Context, req *models.CarRequestDTO, id string) (models.Car, error) {
 	return models.Car{}, nil
 }
 
-// === DELETE ===
 func (s *Store) DeleteCar(ctx context.Context, id string) (models.Car, error) {
 	return models.Car{}, nil
 }
