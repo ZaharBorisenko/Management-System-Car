@@ -104,3 +104,21 @@ func (h *CarHandler) CreateCar(w http.ResponseWriter, r *http.Request) {
 
 	libJSON.WriteJSON(w, http.StatusCreated, createdCar)
 }
+
+func (h *CarHandler) DeleteCar(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	id := r.PathValue("id")
+	if err := helpers.CheckID(id); err != nil {
+		libJSON.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err := h.service.DeleteCar(ctx, id)
+	if err != nil {
+		myErr.HandleError(w, err)
+		return
+	}
+
+	libJSON.WriteJSON(w, http.StatusOK, map[string]string{"status": "car successfully deleted"})
+}

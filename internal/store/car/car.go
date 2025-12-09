@@ -242,7 +242,7 @@ RETURNING id, description, year, brand, model, fuel_type, engine_id, price, vin,
 	if err = tx.Commit(); err != nil {
 		return models.Car{}, fmt.Errorf("commit transaction: %w", err)
 	}
-	
+
 	return createdCar, nil
 }
 
@@ -250,6 +250,21 @@ func (s *Store) UpdateCar(ctx context.Context, req *models.CarRequestDTO, id str
 	return models.Car{}, nil
 }
 
-func (s *Store) DeleteCar(ctx context.Context, id string) (models.Car, error) {
-	return models.Car{}, nil
+func (s *Store) DeleteCar(ctx context.Context, id string) error {
+	query := "DELETE FROM car WHERE id = $1"
+
+	result, err := s.db.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("error deleting user: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error getting rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("no user found with ID: %s", id)
+	}
+
+	return nil
 }

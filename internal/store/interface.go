@@ -12,6 +12,7 @@ type CarStoreInterface interface {
 	GetCarByVinCode(ctx context.Context, vinCode string) (*models.Car, error)
 	GetCarByBrand(ctx context.Context, brand string) ([]models.Car, error)
 	CreateCar(ctx context.Context, req *models.CarRequestDTO) (models.Car, error)
+	DeleteCar(ctx context.Context, id string) error
 }
 
 type EngineStoreInterface interface {
