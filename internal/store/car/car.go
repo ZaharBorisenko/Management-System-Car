@@ -8,6 +8,7 @@ import (
 	"github.com/ZaharBorisenko/Management-System-Car/internal/myErr"
 	"github.com/lib/pq"
 	"log/slog"
+	"reflect"
 	"strings"
 	"time"
 
@@ -246,14 +247,69 @@ RETURNING id, description, year, brand, model, fuel_type, engine_id, price, vin,
 	return createdCar, nil
 }
 
-func (s *Store) UpdateCar(ctx context.Context, req *models.CarRequestDTO, id string) (models.Car, error) {
-	return models.Car{}, nil
+func (s *Store) UpdateCar(ctx context.Context, req *models.CarUpdateDTO, id string) error {
+	type field struct {
+		column string
+		value  any
+		valid  bool
+	}
+
+	fields := []field{
+		{"description", req.Description, req.Description != nil},
+		{"year", req.Year, req.Year != nil},
+		{"brand", req.Brand, req.Brand != nil},
+		{"model", req.Model, req.Model != nil},
+		{"fuel_type", req.FuelType, req.FuelType != nil},
+		{"engine_id", req.EngineID, req.EngineID != nil},
+		{"price", req.Price, req.Price != nil},
+		{"vin", req.VIN, req.VIN != nil},
+		{"mileage", req.Mileage, req.Mileage != nil},
+		{"transmission", req.Transmission, req.Transmission != nil},
+		{"color", req.Color, req.Color != nil},
+		{"body_type", req.BodyType, req.BodyType != nil},
+	}
+
+	setParts := []string{}
+	args := []any{}
+	argID := 1
+
+	for _, f := range fields {
+		if f.valid {
+			setParts = append(setParts, fmt.Sprintf("%s = $%d", f.column, argID))
+			args = append(args, reflect.ValueOf(f.value).Elem().Interface())
+			argID++
+		}
+	}
+
+	if len(setParts) == 0 {
+		return nil
+	}
+
+	query := fmt.Sprintf(`
+        UPDATE car
+        SET %s
+        WHERE id = $%d
+    `, strings.Join(setParts, ", "), argID)
+
+	args = append(args, id)
+
+	result, err := s.db.ExecContext(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("db update error: %w", err)
+	}
+
+	affected, _ := result.RowsAffected()
+	if affected == 0 {
+		return myErr.ErrNotFound
+	}
+
+	return nil
 }
 
 func (s *Store) DeleteCar(ctx context.Context, id string) error {
 	query := "DELETE FROM car WHERE id = $1"
 
-	result, err := s.db.Exec(query, id)
+	result, err := s.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("error deleting user: %w", err)
 	}
@@ -263,7 +319,7 @@ func (s *Store) DeleteCar(ctx context.Context, id string) error {
 		return fmt.Errorf("error getting rows affected: %w", err)
 	}
 	if rowsAffected == 0 {
-		return fmt.Errorf("no user found with ID: %s", id)
+		return myErr.ErrNotFound
 	}
 
 	return nil

@@ -105,6 +105,30 @@ func (h *CarHandler) CreateCar(w http.ResponseWriter, r *http.Request) {
 	libJSON.WriteJSON(w, http.StatusCreated, createdCar)
 }
 
+func (h *CarHandler) UpdateCar(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	id := r.PathValue("id")
+	if err := helpers.CheckID(id); err != nil {
+		libJSON.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	carReq := models.CarUpdateDTO{}
+	if err := libJSON.ReadJSON(r, &carReq); err != nil {
+		libJSON.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	err := h.service.UpdateCar(ctx, &carReq, id)
+	if err != nil {
+		myErr.HandleError(w, err)
+		return
+	}
+
+	libJSON.WriteJSON(w, http.StatusOK, map[string]string{"status": "car updated: " + id})
+}
+
 func (h *CarHandler) DeleteCar(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -120,5 +144,5 @@ func (h *CarHandler) DeleteCar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	libJSON.WriteJSON(w, http.StatusOK, map[string]string{"status": "car successfully deleted"})
+	libJSON.WriteJSON(w, http.StatusOK, map[string]string{"status": "car deleted:" + id})
 }

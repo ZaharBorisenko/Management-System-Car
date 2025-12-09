@@ -75,3 +75,11 @@ func (c *Service) DeleteCar(ctx context.Context, id string) error {
 	}
 	return nil
 }
+
+func (c *Service) UpdateCar(ctx context.Context, req *models.CarUpdateDTO, id string) error {
+	err := c.store.UpdateCar(ctx, req, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}

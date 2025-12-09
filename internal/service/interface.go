@@ -13,6 +13,7 @@ type CarServiceInterface interface {
 	GetCarByBrand(ctx context.Context, brand string) (*[]models.Car, error)
 	CreateCar(ctx context.Context, req *models.CarRequestDTO) (*models.Car, error)
 	DeleteCar(ctx context.Context, id string) error
+	UpdateCar(ctx context.Context, req *models.CarUpdateDTO, id string) error
 }
 
 type EngineServiceInterface interface {
