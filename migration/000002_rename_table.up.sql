@@ -1,0 +1,2 @@
+ALTER TABLE engine RENAME TO engines;
+ALTER TABLE car RENAME TO cars;

@@ -26,7 +26,7 @@ const ENGINE_SELECT = `
 SELECT
 	id, description, displacement, no_of_cylinders, car_range, horse_power,
 	torque, engine_type, emission_class, created_at, updated_at
-FROM engine
+FROM engines
 `
 
 // === GET ===
@@ -59,7 +59,7 @@ func (e *Store) CreateEngine(ctx context.Context, req *models.EngineRequestDTO) 
 	createdEngine := models.Engine{}
 
 	query := `
-INSERT INTO engine (
+INSERT INTO engines (
 	id, description, displacement, no_of_cylinders, car_range, horse_power,
 	torque, engine_type, emission_class, created_at, updated_at
 ) VALUES (

@@ -34,8 +34,8 @@ SELECT
     e.id, e.description, e.displacement, e.no_of_cylinders, e.car_range,
     e.horse_power, e.torque, e.engine_type, e.emission_class,
     e.created_at, e.updated_at
-FROM car AS c
-LEFT JOIN engine AS e ON c.engine_id = e.id
+FROM cars AS c
+LEFT JOIN engines AS e ON c.engine_id = e.id
 `
 
 func pgErrorCode(err error) pq.ErrorCode {
@@ -146,7 +146,7 @@ func (s *Store) CreateCar(ctx context.Context, req *models.CarRequestDTO) (model
 
 	//check engine
 	var engineExists bool
-	err = tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM engine WHERE id = $1)", req.Engine.ID).Scan(&engineExists)
+	err = tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM engines WHERE id = $1)", req.Engine.ID).Scan(&engineExists)
 
 	if err != nil {
 		return models.Car{}, fmt.Errorf("check engine existence: %w", err)
@@ -174,7 +174,7 @@ func (s *Store) CreateCar(ctx context.Context, req *models.CarRequestDTO) (model
 	}
 
 	query := `
-INSERT INTO car (
+INSERT INTO cars (
     id, description, year, brand, model, fuel_type, engine_id,
     price, vin, mileage, transmission, color, body_type, created_at, updated_at
 ) VALUES (
@@ -286,7 +286,7 @@ func (s *Store) UpdateCar(ctx context.Context, req *models.CarUpdateDTO, id stri
 	}
 
 	query := fmt.Sprintf(`
-        UPDATE car
+        UPDATE cars
         SET %s
         WHERE id = $%d
     `, strings.Join(setParts, ", "), argID)
@@ -307,7 +307,7 @@ func (s *Store) UpdateCar(ctx context.Context, req *models.CarUpdateDTO, id stri
 }
 
 func (s *Store) DeleteCar(ctx context.Context, id string) error {
-	query := "DELETE FROM car WHERE id = $1"
+	query := "DELETE FROM cars WHERE id = $1"
 
 	result, err := s.db.ExecContext(ctx, query, id)
 	if err != nil {
