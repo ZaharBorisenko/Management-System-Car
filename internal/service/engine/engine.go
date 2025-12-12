@@ -22,6 +22,13 @@ func NewEngineService(store store.EngineStoreInterface, logger *slog.Logger) *Se
 		logger:    logger,
 	}
 }
+func (e Service) GetAllEngine(ctx context.Context) ([]models.Engine, error) {
+	engines, err := e.store.GetAllEngine(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return engines, nil
+}
 
 func (e Service) GetEngineById(ctx context.Context, id string) (*models.Engine, error) {
 	engine, err := e.store.GetEngineById(ctx, id)

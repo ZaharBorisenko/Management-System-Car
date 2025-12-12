@@ -17,6 +17,7 @@ func RegisterRoutes(car *carHandler.CarHandler, engine *engineHandler.EngineHand
 	mux.HandleFunc("DELETE /cars/delete/{id}", car.DeleteCar)
 	mux.HandleFunc("PATCH  /cars/update/{id}", car.UpdateCar)
 
+	mux.HandleFunc("GET /engine", engine.GetAllCar)
 	mux.HandleFunc("GET /engine/{id}", engine.GetEngineById)
 	mux.HandleFunc("POST /engine", engine.CreateEngine)
 

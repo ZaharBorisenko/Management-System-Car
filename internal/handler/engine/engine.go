@@ -6,6 +6,7 @@ import (
 	helpers "github.com/ZaharBorisenko/Management-System-Car/internal/handler/helpers/ID"
 	libJSON "github.com/ZaharBorisenko/Management-System-Car/internal/handler/helpers/JSON"
 	"github.com/ZaharBorisenko/Management-System-Car/internal/models"
+	"github.com/ZaharBorisenko/Management-System-Car/internal/myErr"
 	"log/slog"
 	"net/http"
 
@@ -25,6 +26,17 @@ func NewEngineHandler(service service.EngineServiceInterface, logger *slog.Logge
 		service: service,
 		logger:  logger,
 	}
+}
+
+func (h *EngineHandler) GetAllCar(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	engines, err := h.service.GetAllEngine(ctx)
+	if err != nil {
+		myErr.HandleError(w, err)
+		return
+	}
+
+	libJSON.WriteJSON(w, http.StatusOK, engines)
 }
 
 func (h *EngineHandler) GetEngineById(w http.ResponseWriter, r *http.Request) {

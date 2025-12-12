@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/ZaharBorisenko/Management-System-Car/internal/myErr"
 	"log/slog"
 	"time"
 
@@ -29,9 +30,34 @@ SELECT
 FROM engines
 `
 
-// === GET ===
 func (e *Store) GetAllEngine(ctx context.Context) ([]models.Engine, error) {
-	return []models.Engine{}, nil
+	query := ENGINE_SELECT
+
+	rows, err := e.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("query: %w", err)
+	}
+	defer rows.Close()
+
+	engines := make([]models.Engine, 0)
+
+	for rows.Next() {
+		engine, err := helper.ScanEngine(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan engine:  %w", err)
+		}
+		engines = append(engines, engine)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows error: %w", err)
+	}
+
+	if len(engines) == 0 {
+		return nil, myErr.ErrNotFound
+	}
+
+	return engines, nil
 }
 
 func (e *Store) GetEngineById(ctx context.Context, id string) (models.Engine, error) {
@@ -54,7 +80,6 @@ func (e *Store) GetEngineByEngineType(ctx context.Context, engineType string) (m
 	return models.Engine{}, nil
 }
 
-// === CREATE ===
 func (e *Store) CreateEngine(ctx context.Context, req *models.EngineRequestDTO) (models.Engine, error) {
 	createdEngine := models.Engine{}
 

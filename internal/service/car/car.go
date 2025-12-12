@@ -23,12 +23,12 @@ func NewCarService(store store.CarStoreInterface, logger *slog.Logger) *Service 
 	}
 }
 
-func (c *Service) GetAllCar(ctx context.Context) (*[]models.Car, error) {
+func (c *Service) GetAllCar(ctx context.Context) ([]models.Car, error) {
 	cars, err := c.store.GetAllCar(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return &cars, nil
+	return cars, nil
 }
 
 func (c *Service) GetCarById(ctx context.Context, id string) (*models.Car, error) {
@@ -47,12 +47,12 @@ func (c *Service) GetCarByVinCode(ctx context.Context, vinCode string) (*models.
 	return car, nil
 }
 
-func (c *Service) GetCarByBrand(ctx context.Context, brand string) (*[]models.Car, error) {
+func (c *Service) GetCarByBrand(ctx context.Context, brand string) ([]models.Car, error) {
 	cars, err := c.store.GetCarByBrand(ctx, brand)
 	if err != nil {
 		return nil, err
 	}
-	return &cars, nil
+	return cars, nil
 }
 
 func (c *Service) CreateCar(ctx context.Context, req *models.CarRequestDTO) (*models.Car, error) {
