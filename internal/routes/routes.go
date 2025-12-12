@@ -14,12 +14,14 @@ func RegisterRoutes(car *carHandler.CarHandler, engine *engineHandler.EngineHand
 	mux.HandleFunc("GET /cars/vin/{vin}", car.GetCarByVinCode)
 	mux.HandleFunc("GET /cars/brand/{brand}", car.GetCarByBrand)
 	mux.HandleFunc("POST /cars", car.CreateCar)
-	mux.HandleFunc("DELETE /cars/delete/{id}", car.DeleteCar)
 	mux.HandleFunc("PATCH  /cars/update/{id}", car.UpdateCar)
+	mux.HandleFunc("DELETE /cars/delete/{id}", car.DeleteCar)
 
 	mux.HandleFunc("GET /engine", engine.GetAllCar)
 	mux.HandleFunc("GET /engine/{id}", engine.GetEngineById)
 	mux.HandleFunc("POST /engine", engine.CreateEngine)
+	mux.HandleFunc("PATCH /engine/update/{id}", engine.UpdateEngine)
+	mux.HandleFunc("DELETE /engine/delete/{id}", engine.DeleteEngine)
 
 	return mux
 }

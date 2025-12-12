@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"github.com/ZaharBorisenko/Management-System-Car/internal/myErr"
 	"log/slog"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/ZaharBorisenko/Management-System-Car/internal/models"
@@ -76,10 +78,6 @@ func (e *Store) GetEngineById(ctx context.Context, id string) (models.Engine, er
 	return engine, nil
 }
 
-func (e *Store) GetEngineByEngineType(ctx context.Context, engineType string) (models.Engine, error) {
-	return models.Engine{}, nil
-}
-
 func (e *Store) CreateEngine(ctx context.Context, req *models.EngineRequestDTO) (models.Engine, error) {
 	createdEngine := models.Engine{}
 
@@ -141,12 +139,74 @@ RETURNING id, description, displacement, no_of_cylinders, car_range, horse_power
 	return createdEngine, nil
 }
 
-// === UPDATE ===
-func (e *Store) UpdateEngine(ctx context.Context, req *models.EngineRequestDTO, id string) (models.Engine, error) {
-	return models.Engine{}, nil
+func (e *Store) UpdateEngine(ctx context.Context, req *models.EngineUpdateDTO, id string) error {
+	type field struct {
+		column string
+		value  any
+		valid  bool
+	}
+
+	fields := []field{
+		{"description", req.Description, req.Description != nil},
+		{"displacement", req.Displacement, req.Displacement != nil},
+		{"no_of_cylinders", req.NoOfCylinders, req.NoOfCylinders != nil},
+		{"car_range", req.CarRange, req.CarRange != nil},
+		{"horse_power", req.HorsePower, req.HorsePower != nil},
+		{"torque", req.Torque, req.Torque != nil},
+		{"engine_type", req.EngineType, req.EngineType != nil},
+		{"emission_class", req.EmissionClass, req.EmissionClass != nil},
+	}
+
+	setParts := []string{}
+	args := []any{}
+	argID := 1
+
+	for _, f := range fields {
+		if f.valid {
+			setParts = append(setParts, fmt.Sprintf("%s = $%d", f.column, argID))
+			args = append(args, reflect.ValueOf(f.value).Elem().Interface())
+			argID++
+		}
+	}
+
+	if len(setParts) == 0 {
+		return nil
+	}
+
+	query := fmt.Sprintf(`
+        UPDATE engines
+        SET %s
+        WHERE id = $%d
+    `, strings.Join(setParts, ", "), argID)
+
+	args = append(args, id)
+
+	result, err := e.db.ExecContext(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("db update engine error: %w", err)
+	}
+
+	affected, _ := result.RowsAffected()
+	if affected == 0 {
+		return myErr.ErrNotFound
+	}
+
+	return nil
 }
 
-// === DELETE ===
-func (e *Store) DeleteEngine(ctx context.Context, id string) (models.Engine, error) {
-	return models.Engine{}, nil
+func (e *Store) DeleteEngine(ctx context.Context, id string) error {
+	query := "DELETE FROM engines WHERE id = $1"
+	result, err := e.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("error deleting engine: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error getting rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return myErr.ErrNotFound
+	}
+	return nil
 }

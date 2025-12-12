@@ -20,4 +20,6 @@ type EngineStoreInterface interface {
 	GetAllEngine(ctx context.Context) ([]models.Engine, error)
 	GetEngineById(ctx context.Context, id string) (models.Engine, error)
 	CreateEngine(ctx context.Context, req *models.EngineRequestDTO) (models.Engine, error)
+	UpdateEngine(ctx context.Context, req *models.EngineUpdateDTO, id string) error
+	DeleteEngine(ctx context.Context, id string) error
 }

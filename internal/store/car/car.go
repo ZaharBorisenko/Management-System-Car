@@ -311,7 +311,7 @@ func (s *Store) DeleteCar(ctx context.Context, id string) error {
 
 	result, err := s.db.ExecContext(ctx, query, id)
 	if err != nil {
-		return fmt.Errorf("error deleting user: %w", err)
+		return fmt.Errorf("error deleting car: %w", err)
 	}
 
 	rowsAffected, err := result.RowsAffected()

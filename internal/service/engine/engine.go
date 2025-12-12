@@ -49,3 +49,23 @@ func (e Service) CreateEngine(ctx context.Context, req *models.EngineRequestDTO)
 	}
 	return &createdEngine, nil
 }
+
+func (e Service) UpdateEngine(ctx context.Context, req *models.EngineUpdateDTO, id string) error {
+	if err := e.validator.Struct(req); err != nil {
+		return err
+	}
+
+	err := e.store.UpdateEngine(ctx, req, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+func (e Service) DeleteEngine(ctx context.Context, id string) error {
+	err := e.store.DeleteEngine(ctx, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
