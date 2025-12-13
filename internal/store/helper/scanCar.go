@@ -20,7 +20,6 @@ func ScanCar(row scannable) (models.Car, error) {
 		&car.ID,
 		&car.Description,
 		&car.Year,
-		&car.Brand,
 		&car.Model,
 		&car.FuelType,
 		&car.Price,
@@ -31,6 +30,9 @@ func ScanCar(row scannable) (models.Car, error) {
 		&car.BodyType,
 		&car.CreatedAt,
 		&car.UpdatedAt,
+
+		&car.Brand.ID,
+		&car.Brand.Name,
 
 		&engine.ID,
 		&engine.Description,

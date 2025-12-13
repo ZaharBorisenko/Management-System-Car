@@ -28,14 +28,17 @@ func NewCarStore(db *sql.DB, logger *slog.Logger) *Store {
 
 const CAR_SELECT = `
 SELECT
-    c.id, c.description, c.year, c.brand, c.model, c.fuel_type,
+    c.id, c.description, c.year, c.model, c.fuel_type,
     c.price, c.vin, c.mileage, c.transmission, c.color, c.body_type,
     c.created_at, c.updated_at,
+    b.id AS brand_id,
+    b.name AS brand_name,
     e.id, e.description, e.displacement, e.no_of_cylinders, e.car_range,
     e.horse_power, e.torque, e.engine_type, e.emission_class,
     e.created_at, e.updated_at
-FROM cars AS c
-LEFT JOIN engines AS e ON c.engine_id = e.id
+FROM cars c
+JOIN brands b ON b.id = c.brand_id   
+LEFT JOIN engines e ON e.id = c.engine_id
 `
 
 func pgErrorCode(err error) pq.ErrorCode {
@@ -92,7 +95,7 @@ func (s *Store) GetCarById(ctx context.Context, id string) (*models.Car, error) 
 }
 
 func (s *Store) GetCarByBrand(ctx context.Context, brand string) ([]models.Car, error) {
-	query := CAR_SELECT + " WHERE c.brand = $1"
+	query := CAR_SELECT + " WHERE b.id = $1"
 
 	rows, err := s.db.QueryContext(ctx, query, brand)
 	if err != nil {
@@ -159,10 +162,10 @@ func (s *Store) CreateCar(ctx context.Context, req *models.CarRequestDTO) (model
 		ID:           uuid.New(),
 		Description:  req.Description,
 		Year:         req.Year,
-		Brand:        req.Brand,
 		Model:        req.Model,
 		FuelType:     req.FuelType,
 		Engine:       req.Engine,
+		Brand:        req.Brand,
 		Price:        req.Price,
 		VIN:          req.VIN,
 		Mileage:      req.Mileage,
@@ -175,13 +178,13 @@ func (s *Store) CreateCar(ctx context.Context, req *models.CarRequestDTO) (model
 
 	query := `
 INSERT INTO cars (
-    id, description, year, brand, model, fuel_type, engine_id,
+    id, description, year, model, fuel_type, engine_id, brand_id,
     price, vin, mileage, transmission, color, body_type, created_at, updated_at
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7,
     $8, $9, $10, $11, $12, $13, $14, $15
 )
-RETURNING id, description, year, brand, model, fuel_type, engine_id, price, vin, mileage,
+RETURNING id, description, year, model, fuel_type, engine_id, brand_id, price, vin, mileage,
           transmission, color, body_type, created_at, updated_at`
 
 	createdCar := models.Car{}
@@ -190,10 +193,10 @@ RETURNING id, description, year, brand, model, fuel_type, engine_id, price, vin,
 		newCar.ID,
 		newCar.Description,
 		newCar.Year,
-		newCar.Brand,
 		newCar.Model,
 		newCar.FuelType,
 		newCar.Engine.ID,
+		newCar.Brand.ID,
 		newCar.Price,
 		newCar.VIN,
 		newCar.Mileage,
@@ -206,10 +209,10 @@ RETURNING id, description, year, brand, model, fuel_type, engine_id, price, vin,
 		&createdCar.ID,
 		&createdCar.Description,
 		&createdCar.Year,
-		&createdCar.Brand,
 		&createdCar.Model,
 		&createdCar.FuelType,
 		&createdCar.Engine.ID,
+		&createdCar.Brand.ID,
 		&createdCar.Price,
 		&createdCar.VIN,
 		&createdCar.Mileage,
@@ -257,10 +260,10 @@ func (s *Store) UpdateCar(ctx context.Context, req *models.CarUpdateDTO, id stri
 	fields := []field{
 		{"description", req.Description, req.Description != nil},
 		{"year", req.Year, req.Year != nil},
-		{"brand", req.Brand, req.Brand != nil},
 		{"model", req.Model, req.Model != nil},
 		{"fuel_type", req.FuelType, req.FuelType != nil},
 		{"engine_id", req.EngineID, req.EngineID != nil},
+		{"brand_id", req.BrandID, req.BrandID != nil},
 		{"price", req.Price, req.Price != nil},
 		{"vin", req.VIN, req.VIN != nil},
 		{"mileage", req.Mileage, req.Mileage != nil},
