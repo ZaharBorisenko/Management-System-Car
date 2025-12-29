@@ -5,7 +5,7 @@ import (
 	"errors"
 	helpers "github.com/ZaharBorisenko/Management-System-Car/internal/handler/helpers/ID"
 	libJSON "github.com/ZaharBorisenko/Management-System-Car/internal/handler/helpers/JSON"
-	"github.com/ZaharBorisenko/Management-System-Car/internal/models"
+	"github.com/ZaharBorisenko/Management-System-Car/internal/models/dto"
 	"github.com/ZaharBorisenko/Management-System-Car/internal/myErr"
 	"log/slog"
 	"net/http"
@@ -62,7 +62,7 @@ func (h *EngineHandler) GetEngineById(w http.ResponseWriter, r *http.Request) {
 
 func (h *EngineHandler) CreateEngine(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	engineReq := models.EngineRequestDTO{}
+	engineReq := dto.EngineCreateRequest{}
 
 	if err := libJSON.ReadJSON(r, &engineReq); err != nil {
 		libJSON.WriteError(w, http.StatusBadRequest, "Invalid request body")
@@ -86,7 +86,7 @@ func (h *EngineHandler) UpdateEngine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	engineReq := models.EngineUpdateDTO{}
+	engineReq := dto.EngineUpdateRequest{}
 	if err := libJSON.ReadJSON(r, &engineReq); err != nil {
 		libJSON.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return

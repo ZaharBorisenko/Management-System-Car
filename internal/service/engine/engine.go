@@ -2,70 +2,78 @@ package engine
 
 import (
 	"context"
-	"log/slog"
+	"github.com/ZaharBorisenko/Management-System-Car/internal/models/entity"
 
-	"github.com/ZaharBorisenko/Management-System-Car/internal/models"
+	"github.com/ZaharBorisenko/Management-System-Car/internal/models/dto"
+	"github.com/ZaharBorisenko/Management-System-Car/internal/models/mapper"
 	"github.com/ZaharBorisenko/Management-System-Car/internal/store"
 	"github.com/go-playground/validator/v10"
 )
 
 type Service struct {
-	store     store.EngineStoreInterface
-	validator *validator.Validate
-	logger    *slog.Logger
+	store store.EngineStoreInterface
+	v     *validator.Validate
 }
 
-func NewEngineService(store store.EngineStoreInterface, logger *slog.Logger) *Service {
+func NewEngineService(store store.EngineStoreInterface) *Service {
 	return &Service{
-		store:     store,
-		validator: validator.New(),
-		logger:    logger,
+		store: store,
+		v:     validator.New(),
 	}
 }
-func (e Service) GetAllEngine(ctx context.Context) ([]models.Engine, error) {
-	engines, err := e.store.GetAllEngine(ctx)
+
+func (s *Service) GetAllEngine(ctx context.Context) ([]dto.EngineResponse, error) {
+	es, err := s.store.GetAllEngine(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return engines, nil
+
+	res := make([]dto.EngineResponse, 0, len(es))
+	for _, e := range es {
+		res = append(res, mapper.ToEngineResponse(e))
+	}
+	return res, nil
 }
 
-func (e Service) GetEngineById(ctx context.Context, id string) (*models.Engine, error) {
-	engine, err := e.store.GetEngineById(ctx, id)
+func (s *Service) GetEngineById(ctx context.Context, id string) (dto.EngineResponse, error) {
+	e, err := s.store.GetEngineById(ctx, id)
 	if err != nil {
-		return nil, err
+		return dto.EngineResponse{}, err
 	}
-	return &engine, nil
+	return mapper.ToEngineResponse(e), nil
 }
 
-func (e Service) CreateEngine(ctx context.Context, req *models.EngineRequestDTO) (*models.Engine, error) {
-	if err := e.validator.Struct(req); err != nil {
-		return nil, err
+func (s *Service) CreateEngine(ctx context.Context, req *dto.EngineCreateRequest) (dto.EngineResponse, error) {
+	if err := s.v.Struct(req); err != nil {
+		return dto.EngineResponse{}, err
 	}
 
-	createdEngine, err := e.store.CreateEngine(ctx, req)
+	e := entity.Engine{
+		Description:   req.Description,
+		Displacement:  req.Displacement,
+		NoOfCylinders: req.NoOfCylinders,
+		CarRange:      req.CarRange,
+		HorsePower:    req.HorsePower,
+		Torque:        req.Torque,
+		EngineType:    req.EngineType,
+		EmissionClass: req.EmissionClass,
+	}
+
+	created, err := s.store.CreateEngine(ctx, e)
 	if err != nil {
-		return nil, err
+		return dto.EngineResponse{}, err
 	}
-	return &createdEngine, nil
+
+	return mapper.ToEngineResponse(created), nil
 }
 
-func (e Service) UpdateEngine(ctx context.Context, req *models.EngineUpdateDTO, id string) error {
-	if err := e.validator.Struct(req); err != nil {
+func (s *Service) UpdateEngine(ctx context.Context, req *dto.EngineUpdateRequest, id string) error {
+	if err := s.v.Struct(req); err != nil {
 		return err
 	}
-
-	err := e.store.UpdateEngine(ctx, req, id)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.store.UpdateEngine(ctx, req, id)
 }
-func (e Service) DeleteEngine(ctx context.Context, id string) error {
-	err := e.store.DeleteEngine(ctx, id)
-	if err != nil {
-		return err
-	}
-	return nil
+
+func (s *Service) DeleteEngine(ctx context.Context, id string) error {
+	return s.store.DeleteEngine(ctx, id)
 }

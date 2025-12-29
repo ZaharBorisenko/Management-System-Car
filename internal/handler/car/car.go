@@ -2,7 +2,7 @@ package handler
 
 import (
 	helpers "github.com/ZaharBorisenko/Management-System-Car/internal/handler/helpers/ID"
-	"github.com/ZaharBorisenko/Management-System-Car/internal/models"
+	"github.com/ZaharBorisenko/Management-System-Car/internal/models/dto"
 	"github.com/ZaharBorisenko/Management-System-Car/internal/myErr"
 	"github.com/go-playground/validator/v10"
 	"log/slog"
@@ -86,7 +86,7 @@ func (h *CarHandler) GetCarByBrand(w http.ResponseWriter, r *http.Request) {
 func (h *CarHandler) CreateCar(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	carReq := models.CarRequestDTO{}
+	carReq := dto.CarCreateRequest{}
 	if err := libJSON.ReadJSON(r, &carReq); err != nil {
 		libJSON.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
@@ -114,7 +114,7 @@ func (h *CarHandler) UpdateCar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	carReq := models.CarUpdateDTO{}
+	carReq := dto.CarUpdateRequest{}
 	if err := libJSON.ReadJSON(r, &carReq); err != nil {
 		libJSON.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return

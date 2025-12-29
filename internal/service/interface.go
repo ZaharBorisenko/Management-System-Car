@@ -2,24 +2,24 @@ package service
 
 import (
 	"context"
-
-	"github.com/ZaharBorisenko/Management-System-Car/internal/models"
+	"github.com/ZaharBorisenko/Management-System-Car/internal/models/dto"
 )
 
 type CarServiceInterface interface {
-	GetAllCar(ctx context.Context) ([]models.Car, error)
-	GetCarById(ctx context.Context, id string) (*models.Car, error)
-	GetCarByVinCode(ctx context.Context, vinCode string) (*models.Car, error)
-	GetCarByBrand(ctx context.Context, brand string) ([]models.Car, error)
-	CreateCar(ctx context.Context, req *models.CarRequestDTO) (*models.Car, error)
+	GetAllCar(ctx context.Context) ([]dto.CarResponse, error)
+	GetCarById(ctx context.Context, id string) (dto.CarResponse, error)
+	GetCarByVinCode(ctx context.Context, vin string) (dto.CarResponse, error)
+	GetCarByBrand(ctx context.Context, brand string) ([]dto.CarResponse, error)
+
+	CreateCar(ctx context.Context, req *dto.CarCreateRequest) (dto.CarResponse, error)
+	UpdateCar(ctx context.Context, req *dto.CarUpdateRequest, id string) error
 	DeleteCar(ctx context.Context, id string) error
-	UpdateCar(ctx context.Context, req *models.CarUpdateDTO, id string) error
 }
 
 type EngineServiceInterface interface {
-	GetAllEngine(ctx context.Context) ([]models.Engine, error)
-	GetEngineById(ctx context.Context, id string) (*models.Engine, error)
-	CreateEngine(ctx context.Context, req *models.EngineRequestDTO) (*models.Engine, error)
-	UpdateEngine(ctx context.Context, req *models.EngineUpdateDTO, id string) error
+	GetAllEngine(ctx context.Context) ([]dto.EngineResponse, error)
+	GetEngineById(ctx context.Context, id string) (dto.EngineResponse, error)
+	CreateEngine(ctx context.Context, req *dto.EngineCreateRequest) (dto.EngineResponse, error)
+	UpdateEngine(ctx context.Context, req *dto.EngineUpdateRequest, id string) error
 	DeleteEngine(ctx context.Context, id string) error
 }

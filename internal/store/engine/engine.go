@@ -5,141 +5,101 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/ZaharBorisenko/Management-System-Car/internal/myErr"
-	"log/slog"
+	"github.com/ZaharBorisenko/Management-System-Car/internal/models/dto"
 	"reflect"
 	"strings"
 	"time"
 
-	"github.com/ZaharBorisenko/Management-System-Car/internal/models"
-	"github.com/ZaharBorisenko/Management-System-Car/internal/store/helper"
+	"github.com/ZaharBorisenko/Management-System-Car/internal/models/entity"
+	"github.com/ZaharBorisenko/Management-System-Car/internal/myErr"
 	"github.com/google/uuid"
 )
 
 type Store struct {
-	db     *sql.DB
-	logger *slog.Logger
+	db *sql.DB
 }
 
-func NewEngineStore(db *sql.DB, logger *slog.Logger) *Store {
-	return &Store{db: db, logger: logger}
+func NewEngineStore(db *sql.DB) *Store {
+	return &Store{db: db}
 }
 
 const ENGINE_SELECT = `
 SELECT
-	id, description, displacement, no_of_cylinders, car_range, horse_power,
-	torque, engine_type, emission_class, created_at, updated_at
+	id, description, displacement, no_of_cylinders, car_range,
+	horse_power, torque, engine_type, emission_class,
+	created_at, updated_at
 FROM engines
 `
 
-func (e *Store) GetAllEngine(ctx context.Context) ([]models.Engine, error) {
-	query := ENGINE_SELECT
+func (s *Store) scan(row *sql.Row) (entity.Engine, error) {
+	var e entity.Engine
+	err := row.Scan(
+		&e.ID, &e.Description, &e.Displacement, &e.NoOfCylinders,
+		&e.CarRange, &e.HorsePower, &e.Torque,
+		&e.EngineType, &e.EmissionClass,
+		&e.CreatedAt, &e.UpdatedAt,
+	)
+	return e, err
+}
 
-	rows, err := e.db.QueryContext(ctx, query)
+func (s *Store) GetAllEngine(ctx context.Context) ([]entity.Engine, error) {
+	rows, err := s.db.QueryContext(ctx, ENGINE_SELECT)
 	if err != nil {
-		return nil, fmt.Errorf("query: %w", err)
+		return nil, err
 	}
 	defer rows.Close()
 
-	engines := make([]models.Engine, 0)
-
+	var result []entity.Engine
 	for rows.Next() {
-		engine, err := helper.ScanEngine(rows)
-		if err != nil {
-			return nil, fmt.Errorf("scan engine:  %w", err)
+		var e entity.Engine
+		if err := rows.Scan(
+			&e.ID, &e.Description, &e.Displacement, &e.NoOfCylinders,
+			&e.CarRange, &e.HorsePower, &e.Torque,
+			&e.EngineType, &e.EmissionClass,
+			&e.CreatedAt, &e.UpdatedAt,
+		); err != nil {
+			return nil, err
 		}
-		engines = append(engines, engine)
+		result = append(result, e)
 	}
 
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("rows error: %w", err)
-	}
-
-	if len(engines) == 0 {
+	if len(result) == 0 {
 		return nil, myErr.ErrNotFound
 	}
-
-	return engines, nil
+	return result, nil
 }
 
-func (e *Store) GetEngineById(ctx context.Context, id string) (models.Engine, error) {
-	query := ENGINE_SELECT + " WHERE id = $1"
-
-	row := e.db.QueryRowContext(ctx, query, id)
-	engine, err := helper.ScanEngine(row)
-
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return engine, fmt.Errorf("engine not found")
-		}
-		return engine, err
+func (s *Store) GetEngineById(ctx context.Context, id string) (entity.Engine, error) {
+	row := s.db.QueryRowContext(ctx, ENGINE_SELECT+" WHERE id=$1", id)
+	e, err := s.scan(row)
+	if errors.Is(err, sql.ErrNoRows) {
+		return e, myErr.ErrNotFound
 	}
-
-	return engine, nil
+	return e, err
 }
 
-func (e *Store) CreateEngine(ctx context.Context, req *models.EngineRequestDTO) (models.Engine, error) {
-	createdEngine := models.Engine{}
+func (s *Store) CreateEngine(ctx context.Context, e entity.Engine) (entity.Engine, error) {
+	e.ID = uuid.New()
+	e.CreatedAt = time.Now()
+	e.UpdatedAt = e.CreatedAt
 
 	query := `
 INSERT INTO engines (
-	id, description, displacement, no_of_cylinders, car_range, horse_power,
-	torque, engine_type, emission_class, created_at, updated_at
-) VALUES (
-	$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11
-)
-RETURNING id, description, displacement, no_of_cylinders, car_range, horse_power,
-          torque, engine_type, emission_class, created_at, updated_at
+	id, description, displacement, no_of_cylinders, car_range,
+	horse_power, torque, engine_type, emission_class, created_at, updated_at
+) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
 `
 
-	newEngine := models.Engine{
-		ID:            uuid.New(),
-		Description:   req.Description,
-		Displacement:  req.Displacement,
-		NoOfCylinders: req.NoOfCylinders,
-		CarRange:      req.CarRange,
-		HorsePower:    req.HorsePower,
-		Torque:        req.Torque,
-		EngineType:    req.EngineType,
-		EmissionClass: req.EmissionClass,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-	}
-
-	err := e.db.QueryRowContext(ctx, query,
-		newEngine.ID,
-		newEngine.Description,
-		newEngine.Displacement,
-		newEngine.NoOfCylinders,
-		newEngine.CarRange,
-		newEngine.HorsePower,
-		newEngine.Torque,
-		newEngine.EngineType,
-		newEngine.EmissionClass,
-		newEngine.CreatedAt,
-		newEngine.UpdatedAt,
-	).Scan(
-		&createdEngine.ID,
-		&createdEngine.Description,
-		&createdEngine.Displacement,
-		&createdEngine.NoOfCylinders,
-		&createdEngine.CarRange,
-		&createdEngine.HorsePower,
-		&createdEngine.Torque,
-		&createdEngine.EngineType,
-		&createdEngine.EmissionClass,
-		&createdEngine.CreatedAt,
-		&createdEngine.UpdatedAt,
+	_, err := s.db.ExecContext(ctx, query,
+		e.ID, e.Description, e.Displacement, e.NoOfCylinders,
+		e.CarRange, e.HorsePower, e.Torque,
+		e.EngineType, e.EmissionClass,
+		e.CreatedAt, e.UpdatedAt,
 	)
-
-	if err != nil {
-		return models.Engine{}, err
-	}
-
-	return createdEngine, nil
+	return e, err
 }
 
-func (e *Store) UpdateEngine(ctx context.Context, req *models.EngineUpdateDTO, id string) error {
+func (s *Store) UpdateEngine(ctx context.Context, req *dto.EngineUpdateRequest, id string) error {
 	type field struct {
 		column string
 		value  any
@@ -157,8 +117,8 @@ func (e *Store) UpdateEngine(ctx context.Context, req *models.EngineUpdateDTO, i
 		{"emission_class", req.EmissionClass, req.EmissionClass != nil},
 	}
 
-	setParts := []string{}
-	args := []any{}
+	setParts := make([]string, 0)
+	args := make([]any, 0)
 	argID := 1
 
 	for _, f := range fields {
@@ -173,20 +133,28 @@ func (e *Store) UpdateEngine(ctx context.Context, req *models.EngineUpdateDTO, i
 		return nil
 	}
 
+	// updated_at
+	setParts = append(setParts, fmt.Sprintf("updated_at = $%d", argID))
+	args = append(args, time.Now())
+	argID++
+
 	query := fmt.Sprintf(`
-        UPDATE engines
-        SET %s
-        WHERE id = $%d
-    `, strings.Join(setParts, ", "), argID)
+UPDATE engines
+SET %s
+WHERE id = $%d
+`, strings.Join(setParts, ", "), argID)
 
 	args = append(args, id)
 
-	result, err := e.db.ExecContext(ctx, query, args...)
+	result, err := s.db.ExecContext(ctx, query, args...)
 	if err != nil {
-		return fmt.Errorf("db update engine error: %w", err)
+		return err
 	}
 
-	affected, _ := result.RowsAffected()
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected == 0 {
 		return myErr.ErrNotFound
 	}
@@ -194,18 +162,12 @@ func (e *Store) UpdateEngine(ctx context.Context, req *models.EngineUpdateDTO, i
 	return nil
 }
 
-func (e *Store) DeleteEngine(ctx context.Context, id string) error {
-	query := "DELETE FROM engines WHERE id = $1"
-	result, err := e.db.ExecContext(ctx, query, id)
+func (s *Store) DeleteEngine(ctx context.Context, id string) error {
+	res, err := s.db.ExecContext(ctx, "DELETE FROM engines WHERE id=$1", id)
 	if err != nil {
-		return fmt.Errorf("error deleting engine: %w", err)
+		return err
 	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("error getting rows affected: %w", err)
-	}
-	if rowsAffected == 0 {
+	if rows, _ := res.RowsAffected(); rows == 0 {
 		return myErr.ErrNotFound
 	}
 	return nil

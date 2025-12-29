@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/ZaharBorisenko/Management-System-Car/internal/models"
+	"github.com/ZaharBorisenko/Management-System-Car/internal/models/dto"
 	"github.com/ZaharBorisenko/Management-System-Car/internal/store"
 	"github.com/go-playground/validator/v10"
 )
@@ -23,66 +23,36 @@ func NewCarService(store store.CarStoreInterface, logger *slog.Logger) *Service 
 	}
 }
 
-func (c *Service) GetAllCar(ctx context.Context) ([]models.Car, error) {
-	cars, err := c.store.GetAllCar(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return cars, nil
+func (s *Service) GetAllCar(ctx context.Context) ([]dto.CarResponse, error) {
+	return s.store.GetAllCar(ctx)
 }
 
-func (c *Service) GetCarById(ctx context.Context, id string) (*models.Car, error) {
-	car, err := c.store.GetCarById(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	return car, nil
+func (s *Service) GetCarById(ctx context.Context, id string) (dto.CarResponse, error) {
+	return s.store.GetCarById(ctx, id)
 }
 
-func (c *Service) GetCarByVinCode(ctx context.Context, vinCode string) (*models.Car, error) {
-	car, err := c.store.GetCarByVinCode(ctx, vinCode)
-	if err != nil {
-		return nil, err
-	}
-	return car, nil
+func (s *Service) GetCarByVinCode(ctx context.Context, vin string) (dto.CarResponse, error) {
+	return s.store.GetCarByVinCode(ctx, vin)
 }
 
-func (c *Service) GetCarByBrand(ctx context.Context, brand string) ([]models.Car, error) {
-	cars, err := c.store.GetCarByBrand(ctx, brand)
-	if err != nil {
-		return nil, err
-	}
-	return cars, nil
+func (s *Service) GetCarByBrand(ctx context.Context, brand string) ([]dto.CarResponse, error) {
+	return s.store.GetCarByBrand(ctx, brand)
 }
 
-func (c *Service) CreateCar(ctx context.Context, req *models.CarRequestDTO) (*models.Car, error) {
-	if err := c.validator.Struct(req); err != nil {
-		return nil, err
+func (s *Service) CreateCar(ctx context.Context, req *dto.CarCreateRequest) (dto.CarResponse, error) {
+	if err := s.validator.Struct(req); err != nil {
+		return dto.CarResponse{}, err
 	}
-
-	createdCar, err := c.store.CreateCar(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	return &createdCar, nil
+	return s.store.CreateCar(ctx, req)
 }
 
-func (c *Service) DeleteCar(ctx context.Context, id string) error {
-	err := c.store.DeleteCar(ctx, id)
-	if err != nil {
+func (s *Service) UpdateCar(ctx context.Context, req *dto.CarUpdateRequest, id string) error {
+	if err := s.validator.Struct(req); err != nil {
 		return err
 	}
-	return nil
+	return s.store.UpdateCar(ctx, req, id)
 }
 
-func (c *Service) UpdateCar(ctx context.Context, req *models.CarUpdateDTO, id string) error {
-	if err := c.validator.Struct(req); err != nil {
-		return err
-	}
-	err := c.store.UpdateCar(ctx, req, id)
-	if err != nil {
-		return err
-	}
-	return nil
+func (s *Service) DeleteCar(ctx context.Context, id string) error {
+	return s.store.DeleteCar(ctx, id)
 }

@@ -42,15 +42,15 @@ func main() {
 	logger := logger.InitLogger()
 	fmt.Println("slog initialization!", logger)
 
-	//Init store
-	carStore := carStore.NewCarStore(db, logger)
-	engineStore := engineStore.NewEngineStore(db, logger)
+	// Init store
+	engineStore := engineStore.NewEngineStore(db)
+	carStore := carStore.NewCarStore(db, engineStore, logger)
 
-	//Init service
+	// Init service
 	carService := carService.NewCarService(carStore, logger)
-	engineService := engineService.NewEngineService(engineStore, logger)
+	engineService := engineService.NewEngineService(engineStore)
 
-	//Init handlers
+	// Init handlers
 	carHandler := carHandler.NewCarHandler(carService, logger)
 	engineHandler := engineHandler.NewEngineHandler(engineService, logger)
 
