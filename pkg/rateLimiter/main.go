@@ -1,40 +1,68 @@
 package rateLimiter
 
-import "container/list"
+import (
+	"container/list"
+	"net"
+	"net/http"
+	"sync"
+	"time"
+)
 
 type RequestLog struct {
 	requests *list.List
 }
 
-func RateLimiter(timestamps []int64, ipAddresses []string, limit int, timeWindow int64) []int {
-	requestLog := make(map[string]*RequestLog)
-	result := make([]int, len(timestamps))
+type Limiter struct {
+	limit      int
+	timeWindow time.Duration
+	clients    map[string]*RequestLog
+	mu         sync.Mutex
+}
 
-	for i, timestamp := range timestamps {
-		ip := ipAddresses[i]
-		if _, ok := requestLog[ip]; !ok {
-			requestLog[ip] = &RequestLog{requests: list.New()}
+func NewLimiter(limit int, timeWindow time.Duration) *Limiter {
+	return &Limiter{
+		limit:      limit,
+		timeWindow: timeWindow,
+		clients:    make(map[string]*RequestLog),
+	}
+}
+
+func (l *Limiter) Middleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ip, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			http.Error(w, "invalid ip", http.StatusInternalServerError)
+			return
 		}
-		log := requestLog[ip]
 
-		// Remove outdated requests
+		now := time.Now().UnixNano()
+		window := int64(l.timeWindow)
+
+		l.mu.Lock()
+		defer l.mu.Unlock()
+
+		if _, ok := l.clients[ip]; !ok {
+			l.clients[ip] = &RequestLog{requests: list.New()}
+		}
+
+		log := l.clients[ip]
+
+		// remove old requests
 		for log.requests.Len() > 0 {
 			front := log.requests.Front()
-			if front.Value.(int64) < timestamp-timeWindow {
+			if front.Value.(int64) < now-window {
 				log.requests.Remove(front)
 			} else {
 				break
 			}
 		}
 
-		// Check if we can accept the request
-		if log.requests.Len() < limit {
-			log.requests.PushBack(timestamp)
-			result[i] = 1 // Accept request
-		} else {
-			result[i] = 0 // Reject request
+		if log.requests.Len() >= l.limit {
+			http.Error(w, "rate limit exceeded", http.StatusTooManyRequests)
+			return
 		}
 
-	}
-	return result
+		log.requests.PushBack(now)
+		next.ServeHTTP(w, r)
+	})
 }

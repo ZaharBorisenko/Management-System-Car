@@ -12,10 +12,12 @@ import (
 	carStore "github.com/ZaharBorisenko/Management-System-Car/internal/store/car"
 	engineStore "github.com/ZaharBorisenko/Management-System-Car/internal/store/engine"
 	"github.com/ZaharBorisenko/Management-System-Car/pkg/logger"
+	"github.com/ZaharBorisenko/Management-System-Car/pkg/rateLimiter"
 	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 func main() {
@@ -54,8 +56,12 @@ func main() {
 	carHandler := carHandler.NewCarHandler(carService, logger)
 	engineHandler := engineHandler.NewEngineHandler(engineService, logger)
 
+	// init rate limiter
+	limiter := rateLimiter.NewLimiter(10, time.Minute)
+
 	//router
 	routing := routes.RegisterRoutes(carHandler, engineHandler)
+	handlerRout := limiter.Middleware(routing)
 
 	// run server
 	port := os.Getenv("SERVER_PORT")
@@ -63,7 +69,7 @@ func main() {
 		port = ":8080"
 	}
 
-	err = http.ListenAndServe(port, routing)
+	err = http.ListenAndServe(port, handlerRout)
 	if err != nil {
 		log.Fatalf("Server not listening %v", err)
 	}
