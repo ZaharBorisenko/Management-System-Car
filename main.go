@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"github.com/ZaharBorisenko/Management-System-Car/internal/broker/kafka"
 	"github.com/ZaharBorisenko/Management-System-Car/internal/database/db"
 	carHandler "github.com/ZaharBorisenko/Management-System-Car/internal/handler/car"
 	engineHandler "github.com/ZaharBorisenko/Management-System-Car/internal/handler/engine"
@@ -62,6 +64,37 @@ func main() {
 	//router
 	routing := routes.RegisterRoutes(carHandler, engineHandler)
 	handlerRout := limiter.Middleware(routing)
+
+	//==========TEST KAFKA====================
+	producer := kafka.NewProducer()
+	defer producer.Close()
+
+	consumer := kafka.NewConsumer()
+	defer consumer.Close()
+
+	// Тест producer:
+	ctx := context.Background()
+	err = producer.SendMessage(ctx, []byte("Test message from Car Manager!"))
+	if err != nil {
+		log.Printf("Kafka producer error: %v", err)
+	} else {
+		log.Println("Kafka message sent successfully")
+	}
+
+	// Тест consumer:
+	go func() {
+		for {
+			msg, err := consumer.ReadMessage(ctx)
+			if err != nil {
+				log.Printf("Kafka consumer error: %v", err)
+				time.Sleep(1 * time.Second)
+				continue
+			}
+			log.Printf("Received Kafka message: %s", msg)
+		}
+	}()
+
+	//==========TEST KAFKA END====================
 
 	// run server
 	port := os.Getenv("SERVER_PORT")
